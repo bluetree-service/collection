@@ -1,11 +1,11 @@
 {
-    "name": "chajr/class-kernel",
+    "name": "bluetree-service/collection",
     "type": "library",
     "license": "Apache-2.0",
-    "description": "Class Kernel libraries",
-    "keywords": ["register", "xml", "object container", "class kernel"],
-    "homepage": "https://github.com/chajr/class-kernel",
-    "version": "0.3.2.15",
+    "description": "Collection library",
+    "keywords": ["collection", "data", "object collection", "bluetree", "bluetree-service"],
+    "homepage": "https://github.com/bluetree-service/collection",
+    "version": "0.1.0.0",
     "authors": [
         {
             "name": "Michał Adamiak",
@@ -16,13 +16,14 @@
     ],
     "require": {
         "php": ">=5.4.0",
+        "bluetree-service/container": "0.1.*",
         "zendframework/zend-serializer": "2.*",
-        "zendframework/zend-servicemanager": "2.*",
-        "satooshi/php-coveralls": "dev-master"
+        "satooshi/php-coveralls": "0.6.*"
     },
     "autoload": {
         "psr-4": {
-            "ClassKernel\\": "src/"
+            "BlueCollection\\": "src/",
+            "Test\\": "tests/"
         }
     }
 }

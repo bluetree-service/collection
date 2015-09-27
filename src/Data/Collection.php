@@ -2,13 +2,13 @@
 /**
  * collection class to store list of Objects or other data in array
  *
- * @package     ClassKernel
+ * @package     BlueCollection
  * @subpackage  Data
  * @author      Michał Adamiak    <chajr@bluetree.pl>
  * @copyright   chajr/bluetree
- * @link https://github.com/chajr/class-kernel/wiki/ClassKernel_Data_Collection collection usage
+ * @link https://github.com/bluetree-service/collection/wiki/ClassKernel_Data_Collection collection usage
  */
-namespace ClassKernel\Data;
+namespace BlueCollection\Data;
 
 use Serializable;
 use ArrayAccess;
@@ -16,7 +16,7 @@ use Iterator;
 use Zend\Serializer\Serializer;
 use Zend\Serializer\Exception\ExceptionInterface;
 use Exception;
-use ClassKernel\Helper\ArrayHelper;
+use BlueCollection\Helper\ArrayHelper;
 
 class Collection implements Serializable, ArrayAccess, Iterator
 {

@@ -2,14 +2,14 @@
 /**
  * test Array Helper
  *
- * @package     ClassKernel
+ * @package     BlueCollection
  * @subpackage  Test
  * @author      Michał Adamiak    <chajr@bluetree.pl>
  * @copyright   chajr/bluetree
  */
 namespace Test;
 
-use ClassKernel\Helper\ArrayHelper;
+use BlueCollection\Helper\ArrayHelper;
 
 class ArrayHelperTest extends \PHPUnit_Framework_TestCase
 {

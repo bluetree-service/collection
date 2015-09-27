@@ -2,13 +2,13 @@
 /**
  * helpfully array methods
  *
- * @package     ClassKernel
+ * @package     BlueCollection
  * @subpackage  Helper
  * @author      Michał Adamiak    <chajr@bluetree.pl>
  * @copyright   chajr/bluetree
  */
 
-namespace ClassKernel\Helper;
+namespace BlueCollection\Helper;
 
 class ArrayHelper
 {

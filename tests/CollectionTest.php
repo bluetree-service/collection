@@ -2,15 +2,15 @@
 /**
  * test Collection Object class
  *
- * @package     ClassKernel
+ * @package     BlueCollection
  * @subpackage  Test
  * @author      Michał Adamiak    <chajr@bluetree.pl>
  * @copyright   chajr/bluetree
  */
 namespace Test;
 
-use ClassKernel\Data\Collection;
-use ClassKernel\Data\Object;
+use BlueCollection\Data\Collection;
+use BlueContainer\Container;
 use Zend\Serializer\Serializer;
 
 class CollectionTest extends \PHPUnit_Framework_TestCase
@@ -146,7 +146,7 @@ class CollectionTest extends \PHPUnit_Framework_TestCase
         $data               = $this->_exampleCollection();
         $preparationRules   = [
             'rule_1' => function ($index, $value) {
-            if ($value instanceof Object) {
+            if ($value instanceof Container) {
                 $value->setTestKey('test key');
             }
 
@@ -173,7 +173,7 @@ class CollectionTest extends \PHPUnit_Framework_TestCase
         $data               = $this->_exampleCollection();
         $preparationRules   = [
             'rule_1' => function ($index, $value) {
-                if ($value instanceof Object) {
+                if ($value instanceof Container) {
                     $value->setTestKey('test return key');
                 }
 
@@ -396,7 +396,7 @@ class CollectionTest extends \PHPUnit_Framework_TestCase
      */
     protected function _exampleCollection()
     {
-        $object = new Object(
+        $object = new Container(
             [
                 'data' => [
                     'data_first'    => 'first',
