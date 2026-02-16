@@ -10,8 +10,10 @@
 namespace Test;
 
 use BlueCollection\Helper\ArrayHelper;
+use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 
-class ArrayHelperTest extends \PHPUnit_Framework_TestCase
+class ArrayHelperTest extends TestCase
 {
     /**
      * test array merge
@@ -58,7 +60,7 @@ class ArrayHelperTest extends \PHPUnit_Framework_TestCase
      *
      * @return array
      */
-    public function arrayDataProvider()
+    public static function arrayDataProvider()
     {
         return [
             [

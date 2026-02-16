@@ -42,7 +42,7 @@ Project description
 
 ### Requirements
 
-* PHP 5.4 or higher
+* PHP 8.2 or higher
 * DOM extension enabled
 
 Change log

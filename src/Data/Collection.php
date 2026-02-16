@@ -10,15 +10,13 @@
  */
 namespace BlueCollection\Data;
 
-use Serializable;
+use Laminas\Serializer\Adapter\PhpSerialize;
 use ArrayAccess;
 use Iterator;
-use Zend\Serializer\Serializer;
-use Zend\Serializer\Exception\ExceptionInterface;
 use Exception;
 use BlueCollection\Helper\ArrayHelper;
 
-class Collection implements Serializable, ArrayAccess, Iterator
+class Collection implements ArrayAccess, Iterator
 {
     /**
      * store all collection elements
@@ -326,7 +324,8 @@ class Collection implements Serializable, ArrayAccess, Iterator
         $data = [];
 
         try {
-            $data = Serializer::unserialize($string);
+            $serializer = new PhpSerialize();
+            $data = $serializer->unserialize($string);
         } catch (ExceptionInterface $exception) {
             $this->_addException($exception);
         }
@@ -1099,7 +1098,7 @@ class Collection implements Serializable, ArrayAccess, Iterator
      * @param int $offset
      * @return bool
      */
-    public function offsetExists($offset)
+    public function offsetExists(mixed $offset): bool
     {
         if ($this->_loopByPages) {
             return $this->_isPageAllowed($offset +1);
@@ -1114,7 +1113,7 @@ class Collection implements Serializable, ArrayAccess, Iterator
      * @param int $offset
      * @return mixed
      */
-    public function offsetGet($offset)
+    public function offsetGet(mixed $offset): mixed
     {
         if ($this->_loopByPages) {
             return $this->getPage($offset +1);
@@ -1130,7 +1129,7 @@ class Collection implements Serializable, ArrayAccess, Iterator
      * @param mixed $value
      * @return $this
      */
-    public function offsetSet($offset, $value)
+    public function offsetSet(mixed $offset, mixed $value): void
     {
         if ($this->_loopByPages) {
             $indexesToUpdate    = $this->_getIndexesToUpdate($offset +1);
@@ -1138,7 +1137,7 @@ class Collection implements Serializable, ArrayAccess, Iterator
 
             foreach ($value as $element) {
                 if (empty($indexesToUpdate)) {
-                    return $this;
+                    break;
                 }
                 $this->changeElement($indexesToUpdate[$counter], $element);
                 $counter++;
@@ -1151,8 +1150,6 @@ class Collection implements Serializable, ArrayAccess, Iterator
                 $this->addElement($value);
             }
         }
-
-        return $this;
     }
 
     /**
@@ -1161,7 +1158,7 @@ class Collection implements Serializable, ArrayAccess, Iterator
      * @param int $offset
      * @return $this
      */
-    public function offsetUnset($offset)
+    public function offsetUnset(mixed $offset): void
     {
         if ($this->_loopByPages) {
             $indexesToRemove = $this->_getIndexesToUpdate($offset +1);
@@ -1172,7 +1169,6 @@ class Collection implements Serializable, ArrayAccess, Iterator
             $this->delete($offset);
         }
 
-        return $this;
     }
 
     /**
@@ -1181,7 +1177,7 @@ class Collection implements Serializable, ArrayAccess, Iterator
      *
      * @return mixed
      */
-    public function current()
+    public function current(): mixed
     {
         $key = $this->key();
 
@@ -1198,7 +1194,7 @@ class Collection implements Serializable, ArrayAccess, Iterator
      *
      * @return mixed
      */
-    public function key()
+    public function key(): mixed
     {
         if ($this->_loopByPages) {
             return $this->getCurrentPage();
@@ -1213,16 +1209,16 @@ class Collection implements Serializable, ArrayAccess, Iterator
      *
      * @return mixed
      */
-    public function next()
+    public function next(): void
     {
         $key = $this->key();
 
         if ($this->_loopByPages) {
             $this->setCurrentPage($key +1);
-            return $this->getPage($this->getCurrentPage());
+            $this->getPage($this->getCurrentPage());
         } else {
             next($this->_COLLECTION);
-            return $this->getElement($key);
+            $this->getElement($key);
         }
     }
 
@@ -1231,13 +1227,13 @@ class Collection implements Serializable, ArrayAccess, Iterator
      *
      * @return mixed
      */
-    public function rewind()
+    public function rewind(): void
     {
         if ($this->_loopByPages) {
             $this->setCurrentPage(1);
-            return $this->getFirstPage();
+            $this->getFirstPage();
         } else {
-            return reset($this->_COLLECTION);
+            reset($this->_COLLECTION);
         }
     }
 
@@ -1246,7 +1242,7 @@ class Collection implements Serializable, ArrayAccess, Iterator
      *
      * @return bool
      */
-    public function valid()
+    public function valid(): bool
     {
         if ($this->_loopByPages) {
             return $this->_isPageAllowed($this->key());

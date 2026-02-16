@@ -11,9 +11,10 @@ namespace Test;
 
 use BlueCollection\Data\Collection;
 use BlueContainer\Container;
-use Zend\Serializer\Serializer;
+use PHPUnit\Framework\TestCase;
+use Laminas\Serializer\Adapter\PhpSerialize;
 
-class CollectionTest extends \PHPUnit_Framework_TestCase
+class CollectionTest extends TestCase
 {
     /**
      * test basic object creation
@@ -22,7 +23,7 @@ class CollectionTest extends \PHPUnit_Framework_TestCase
      * @param array $data
      * @dataProvider exampleCollectionObject
      * @requires exampleCollection
-     * @requires _exampleCollectionObject
+     * @requires exampleCollectionObject
      */
     public function testCreateCollection($collection, array $data)
     {
@@ -39,11 +40,11 @@ class CollectionTest extends \PHPUnit_Framework_TestCase
      * test basic object creation with json data
      *
      * @requires exampleCollection
-     * @requires _exampleCollectionObject
+     * @requires exampleCollectionObject
      */
     public function testCreateJsonCollection()
     {
-        $data = $this->_exampleCollection();
+        $data = self::exampleCollection();
         unset($data[7]);
         unset($data[8]);
 
@@ -61,20 +62,23 @@ class CollectionTest extends \PHPUnit_Framework_TestCase
      * test basic object creation with serialized data
      *
      * @requires exampleCollection
-     * @requires _exampleCollectionObject
+     * @requires exampleCollectionObject
      */
     public function testCreateSerializedCollection()
     {
-        $data = $this->_exampleCollection();
+        $data = self::exampleCollection();
         unset($data[7]);
         unset($data[8]);
 
-        $serialized = Serializer::serialize($data);
-        
+        $serializer = new PhpSerialize();
+        $serialized = $serializer->serialize($data);
+
         $collection = new Collection([
             'data'  => $serialized,
             'type'  => 'serialized'
         ]);
+
+//        dump($collection->);
 
         $this->assertEquals('lorem ipsum', $collection->first());
         $this->assertEquals($data[1]['data_first'], $collection->getElement(1)['data_first']);
@@ -83,11 +87,11 @@ class CollectionTest extends \PHPUnit_Framework_TestCase
     /**
      * check validation rules when add data to collection on object creation
      *
-     * @requires _exampleCollectionObject
+     * @requires exampleCollectionObject
      */
     public function testCreateCollectionWithValidation()
     {
-        $data               = $this->_exampleCollection();
+        $data = self::exampleCollection();
         $validationRules    = [
             'rule_1' => function ($index, $value) {
             if (is_string($value)) {
@@ -139,11 +143,11 @@ class CollectionTest extends \PHPUnit_Framework_TestCase
     /**
      * test data preparation when object is creating
      * 
-     * @requires _exampleCollectionObject
+     * @requires exampleCollectionObject
      */
     public function testCreateCollectionWithDataPreparation()
     {
-        $data               = $this->_exampleCollection();
+        $data = self::exampleCollection();
         $preparationRules   = [
             'rule_1' => function ($index, $value) {
             if ($value instanceof Container) {
@@ -166,11 +170,11 @@ class CollectionTest extends \PHPUnit_Framework_TestCase
     /**
      * test data preparation when collection return some elements
      *
-     * @requires _exampleCollectionObject
+     * @requires exampleCollectionObject
      */
     public function testReturnCollectionWithDataPreparation()
     {
-        $data               = $this->_exampleCollection();
+        $data = self::exampleCollection();
         $preparationRules   = [
             'rule_1' => function ($index, $value) {
                 if ($value instanceof Container) {
@@ -376,11 +380,11 @@ class CollectionTest extends \PHPUnit_Framework_TestCase
     /**
      * create collection object for test
      * 
-     * @return Collection
+     * @return array
      */
-    public function exampleCollectionObject()
+    public static function exampleCollectionObject(): array
     {
-        $data = $this->_exampleCollection();
+        $data = self::exampleCollection();
         return [[
             new Collection([
                 'data'  => $data
@@ -394,7 +398,7 @@ class CollectionTest extends \PHPUnit_Framework_TestCase
      * 
      * @return array
      */
-    protected function _exampleCollection()
+    protected static function exampleCollection()
     {
         $object = new Container(
             [
