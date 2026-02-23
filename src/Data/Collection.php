@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 /**
  * collection class to store list of Objects or other data in array
  *
@@ -6,7 +9,7 @@
  * @subpackage  Data
  * @author      Michał Adamiak    <chajr@bluetree.pl>
  * @copyright   chajr/bluetree
- * @link https://github.com/bluetree-service/collection/wiki/ClassKernel_Data_Collection collection usage
+ * @link https://github.com/bluetree-service/collection/wiki/ClassKernel_Datacollection collection usage
  */
 namespace BlueCollection\Data;
 
@@ -20,38 +23,38 @@ class Collection implements ArrayAccess, Iterator
 {
     /**
      * store all collection elements
-     * 
+     *
      * @var array
      */
-    protected $_COLLECTION = [];
+    protected array $collection = [];
 
     /**
      * store collection element before change
-     * 
+     *
      * @var array
      */
-    protected $_originalCollection = [];
+    protected array $originalCollection = [];
 
     /**
      * default page size
-     * 
+     **
      * @var int
      */
-    protected $_pageSize = 10;
+    protected int $pageSize = 10;
 
     /**
      * number of current page
-     * 
+     **
      * @var int
      */
-    protected $_currentPage = 1;
+    protected int $currentPage = 1;
 
     /**
      * if there was some errors in object, that variable will be set on true
      *
      * @var bool
      */
-    protected $_hasErrors = false;
+    protected bool $hasErrors = false;
 
     /**
      * will contain list of all errors that was occurred in object
@@ -60,19 +63,19 @@ class Collection implements ArrayAccess, Iterator
      *
      * @var array
      */
-    protected $_errorsList = [];
+    protected array $errorsList = [];
 
     /**
-     * @var boolean
+     * @var bool
      */
-    protected $_dataChanged = false;
+    protected bool $dataChanged = false;
 
     /**
      * separator for data to return as string
      *
      * @var string
      */
-    protected $_separator = ', ';
+    protected string $separator = ', ';
 
     /**
      * store list of rules to validate data
@@ -80,63 +83,63 @@ class Collection implements ArrayAccess, Iterator
      *
      * @var array
      */
-    protected $_validationRules = [];
+    protected array $validationRules = [];
 
     /**
      * list of callbacks to prepare data before insert into object
      *
      * @var array
      */
-    protected $_dataPreparationCallbacks = [];
+    protected array $dataPreparationCallbacks = [];
 
     /**
      * list of callbacks to prepare data before return from object
      *
      * @var array
      */
-    protected $_dataRetrieveCallbacks = [];
+    protected array $dataRetrieveCallbacks = [];
 
     /**
      * allow to turn off/on data validation
      *
      * @var bool
      */
-    protected $_validationOn = true;
+    protected bool $validationOn = true;
 
     /**
      * allow to turn off/on data preparation
      *
      * @var bool
      */
-    protected $_preparationOn = true;
+    protected bool $preparationOn = true;
 
     /**
      * allow to turn off/on data retrieve preparation
      *
      * @var bool
      */
-    protected $_retrieveOn = true;
+    protected bool $retrieveOn = true;
 
     /**
      * allow to process [section] as array key
      *
      * @var bool
      */
-    protected $_processIniSection;
+    protected bool $processIniSection;
 
     /**
      * if true loop on collection will iterate on pages, otherwise on elements
-     * 
+     **
      * @var bool
      */
-    protected $_loopByPages = false;
+    protected bool $loopByPages = false;
 
     /**
      * default constructor options
      *
      * @var array
      */
-    protected $_options = [
+    protected array $options = [
         'data'                  => null,
         'type'                  => null,
         'validation'            => [],
@@ -146,74 +149,76 @@ class Collection implements ArrayAccess, Iterator
 
     /**
      * store size of original given collection
-     * 
+     **
      * @var int
      */
-    protected $_originalCollectionSize = 0;
+    protected int $originalCollectionSize = 0;
 
     /**
      * inform append* methods that data was set in object creation
      *
      * @var bool
      */
-    protected $_objectCreation = true;
+    protected bool $objectCreation = true;
 
     /**
      * store all new added data keys, to remove them when in eg. restore original data
-     * 
+     **
      * @var array
      */
-    protected $_newKeys = [];
+    protected array $newKeys  = [];
 
     /**
      * store list of removed original collection keys
      *
      * @var array
      */
-    protected $_removedKeys = [];
+    protected array $removedKeys  = [];
 
     /**
      * create collection object
-     * 
+     **
+     *
      * @param array $options
      */
     public function __construct(array $options = [])
     {
-        $this->_options             = array_merge($this->_options, $options);
-        $data                       = $this->_options['data'];
-        $this->_processIniSection   = $this->_options['ini_section'];
+        $this->options = \array_merge($this->options, $options);
+        $data = $this->options['data'];
+        $this->processIniSection = $this->options['ini_section'];
 
-        $this->_beforeInitializeObject($data);
-        $this->putValidationRule($this->_options['validation'])
-            ->putPreparationCallback($this->_options['preparation'])
-            ->_initializeObject($data);
+        $data = $this->beforeInitializeObject($data);
+        $this->putValidationRule($this->options['validation'])
+            ->putPreparationCallback($this->options['preparation']);
+        $data = $this->initializeObject($data);
+            
 
         switch (true) {
-            case is_array($data):
+            case \is_array($data):
                 $this->appendArray($data);
                 break;
 
-            case $this->_options['type'] === 'serialized':
-                $this->unserialize($this->_options['data']);
+            case $this->options['type'] === 'serialized':
+                $this->unserialize($this->options['data']);
                 break;
 
-            case $this->_options['type'] === 'json':
+            case $this->options['type'] === 'json':
                 $this->appendJson($data);
                 break;
 
-//            case $this->_options['type'] === 'xml':
+//            case $this->options['type'] === 'xml':
 //                $this->appendXml($data);
 //                break;
 //
-//            case $this->_options['type'] === 'simple_xml':
+//            case $this->options['type'] === 'simple_xml':
 //                $this->appendSimpleXml($data);
 //                break;
 //
-//            case $this->_options['type'] === 'csv':
+//            case $this->options['type'] === 'csv':
 //                $this->appendCsv($data);
 //                break;
 //
-//            case $this->_options['type'] === 'ini':
+//            case $this->options['type'] === 'ini':
 //                $this->appendIni($data);
 //                break;
 
@@ -221,33 +226,29 @@ class Collection implements ArrayAccess, Iterator
                 break;
         }
 
-        $this->_afterInitializeObject();
-        $this->_objectCreation = false;
+        $this->afterInitializeObject();
+        $this->objectCreation = false;
     }
 
     /**
      * apply given json data as object collection
      *
      * @param string $data
-     * @return $this
+     * @return void
      */
-    public function appendJson($data)
+    public function appendJson(string $data): void
     {
-        $jsonData = json_decode($data, true);
-
-        if (is_array($jsonData)) {
+        try {
+            $jsonData = \json_decode($data, true, 512, JSON_THROW_ON_ERROR);
             $this->appendArray($jsonData);
-        } else {
-            $this->_hasErrors = true;
-            $this->_errorsList[] = 'incorrect_json_data';
-            return $this;
+        } catch (\JsonException $exception) {
+            $this->addException($exception);
+            return;
         }
 
-        if ($this->_objectCreation) {
-            return $this->_afterAppendDataToNewObject();
+        if ($this->objectCreation) {
+            $this->afterAppendDataToNewObject();
         }
-
-        return $this;
     }
 
     /**
@@ -256,10 +257,10 @@ class Collection implements ArrayAccess, Iterator
      * @param $data string
      * @return $this
      */
-//    public function appendSimpleXml($data)
-//    {
-//        return $this;
-//    }
+    public function appendSimpleXml(string $data): self
+    {
+        return $this;
+    }
 
     /**
      * apply given xml data as object collection
@@ -268,10 +269,10 @@ class Collection implements ArrayAccess, Iterator
      * @param $data string
      * @return $this
      */
-//    public function appendXml($data)
-//    {
-//        return $this;
-//    }
+    public function appendXml(string $data): self
+    {
+        return $this;
+    }
 
     /**
      * allow to set ini data into object
@@ -279,10 +280,10 @@ class Collection implements ArrayAccess, Iterator
      * @param string $data
      * @return $this
      */
-//    public function appendIni($data)
-//    {
-//        return $this;
-//    }
+    public function appendIni(string $data): self
+    {
+        return $this;
+    }
 
     /**
      * allow to set csv data into object
@@ -290,24 +291,25 @@ class Collection implements ArrayAccess, Iterator
      * @param string $data
      * @return $this
      */
-//    public function appendCsv($data)
-//    {
-//        return $this;
-//    }
+    public function appendCsv(string $data): self
+    {
+        return $this;
+    }
 
     /**
      * return serialized collection
      *
      * @return string
      */
-    public function serialize()
+    public function serialize(): string
     {
         $data = null;
 
         try {
-            $data = Serializer::serialize($this->_prepareCollection());
-        } catch (ExceptionInterface $exception) {
-            $this->_addException($exception);
+            $serializer = new PhpSerialize();
+            $data = $serializer->serialize($this->prepareCollection());
+        } catch (\Throwable $exception) {
+            $this->addException($exception);
         }
 
         return $data;
@@ -319,23 +321,23 @@ class Collection implements ArrayAccess, Iterator
      * @param string $string
      * @return $this
      */
-    public function unserialize($string)
+    public function unserialize(string $string): self
     {
         $data = [];
 
         try {
             $serializer = new PhpSerialize();
             $data = $serializer->unserialize($string);
-        } catch (ExceptionInterface $exception) {
-            $this->_addException($exception);
+        } catch (\Throwable $exception) {
+            $this->addException($exception);
         }
 
         foreach ($data as $element) {
             $this->addElement($element);
         }
 
-        if ($this->_objectCreation) {
-            return $this->_afterAppendDataToNewObject();
+        if ($this->objectCreation) {
+            return $this->afterAppendDataToNewObject();
         }
 
         return $this;
@@ -347,14 +349,14 @@ class Collection implements ArrayAccess, Iterator
      * @param Exception $exception
      * @return $this
      */
-    protected function _addException(Exception $exception)
+    protected function addException(Exception $exception): self
     {
-        $this->_hasErrors = true;
-        $this->_errorsList[$exception->getCode()] = [
-            'message'   => $exception->getMessage(),
-            'line'      => $exception->getLine(),
-            'file'      => $exception->getFile(),
-            'trace'     => $exception->getTraceAsString(),
+        $this->hasErrors = true;
+        $this->errorsList[$exception->getCode()] = [
+            'message' => $exception->getMessage(),
+            'line' => $exception->getLine(),
+            'file' => $exception->getFile(),
+            'trace' => $exception->getTraceAsString(),
         ];
 
         return $this;
@@ -363,28 +365,28 @@ class Collection implements ArrayAccess, Iterator
     /**
      * prepare collection before return
      *
-     * @param array|null $data
+     * @param mixed $data
      * @param bool $isSingleElement
      * @return mixed
      */
-    protected function _prepareCollection($data = null, $isSingleElement = false)
+    protected function prepareCollection(mixed $data = null, bool $isSingleElement = false): mixed
     {
-        if (is_null($data) && !$isSingleElement) {
-            $data = $this->_COLLECTION;
+        if (\is_null($data) && !$isSingleElement) {
+            $data = $this->collection;
         }
 
-        if (!$this->_retrieveOn) {
+        if (!$this->retrieveOn) {
             return $data;
         }
 
         if ($isSingleElement) {
-            foreach ($this->_dataRetrieveCallbacks as $rule) {
-                $data = $this->_callUserFunction($rule, null, $data, null);
+            foreach ($this->dataRetrieveCallbacks as $rule) {
+                $data = $this->callUserFunction($rule, null, $data, null);
             }
         } else {
-            foreach ($this->_COLLECTION as $index => $element) {
-                foreach ($this->_dataRetrieveCallbacks as $rule) {
-                    $data[$index] = $this->_callUserFunction($rule, $index, $element, null);
+            foreach ($this->collection as $index => $element) {
+                foreach ($this->dataRetrieveCallbacks as $rule) {
+                    $data[$index] = $this->callUserFunction($rule, $index, $element, null);
                 }
             }
         }
@@ -397,23 +399,21 @@ class Collection implements ArrayAccess, Iterator
      * set data changed to false only if restore whole data
      * works only for original deleted data
      *
-     * @param string|null $key
+     * @param int|null $key
      * @return $this
      */
-    public function restoreData($key = null)
+    public function restoreData(?int $key = null): self
     {
         $restored = $this->getOriginalCollection();
 
-        if (is_null($key)) {
-            $this->_COLLECTION              = $restored;
-            $this->_dataChanged             = false;
-            $this->_newKeys                 = [];
-            $this->_removedKeys             = [];
-            $this->_originalCollectionSize  = $this->count();
-        } else {
-            if (array_key_exists($key, $restored)) {
-                $this->_restoreSingleKeyData($key);
-            }
+        if (\is_null($key)) {
+            $this->collection = $restored;
+            $this->dataChanged = false;
+            $this->newKeys = [];
+            $this->removedKeys = [];
+            $this->originalCollectionSize = $this->count();
+        } elseif (\array_key_exists($key, $restored)) {
+            $this->restoreSingleKeyData($key);
         }
 
         return $this;
@@ -424,37 +424,41 @@ class Collection implements ArrayAccess, Iterator
      *
      * @param int $key
      */
-    protected function _restoreSingleKeyData($key)
+    protected function restoreSingleKeyData(int $key): void
     {
         $collection = [];
-        $index      = 0;
-        $size       = count($this->_COLLECTION) +1;
+        $index = 0;
+        $size = \count($this->collection) +1;
+
+        if (!\array_key_exists($key, $this->originalCollection)) {
+            return;
+        }
 
         for ($i = 0; $i < $size; $i++) {
-            if ($i === (int)$key) {
-                $collection[$i] = $this->_originalCollection[$i];
-                unset($this->_originalCollection[$i]);
+            if ($i === $key) {
+                $collection[$i] = $this->originalCollection[$i];
+                unset($this->originalCollection[$i]);
                 $index++;
             } else {
-                $collection[$i] = $this->_COLLECTION[$i - $index];
+                $collection[$i] = $this->collection[$i - $index];
             }
         }
 
-        foreach ($this->_newKeys as $newKeysIndex => $newKey) {
+        foreach ($this->newKeys  as $newKeysIndex => $newKey) {
             if ($newKey > $key) {
-                $this->_newKeys[$newKeysIndex] += 1;
+                ++$this->newKeys[$newKeysIndex];
             }
         }
 
-        $index = array_search($key, $this->_removedKeys);
-        unset($this->_removedKeys[$index]);
-        $this->_COLLECTION = $collection;
+        $index = \array_search($key, $this->removedKeys, true);
+        unset($this->removedKeys [$index]);
+        $this->collection = $collection;
 
-        if (empty($this->_newKeys)
-            && empty($this->_removedKeys)
-            && empty($this->_originalCollection)
+        if (empty($this->newKeys)
+            && empty($this->removedKeys)
+            && empty($this->originalCollection)
         ) {
-            $this->_dataChanged = false;
+            $this->dataChanged = false;
         }
     }
 
@@ -464,9 +468,9 @@ class Collection implements ArrayAccess, Iterator
      * @param array $data
      * @return array
      */
-    protected function _removeNewKeys(array $data)
+    protected function removeNewKeys(array $data): array
     {
-        foreach ($this->_newKeys as $key) {
+        foreach ($this->newKeys  as $key) {
             unset($data[$key]);
         }
         return $data;
@@ -477,13 +481,13 @@ class Collection implements ArrayAccess, Iterator
      *
      * @return $this
      */
-    public function replaceDataArrays()
+    public function replaceDataArrays(): self
     {
-        $this->_originalCollection      = [];
-        $this->_dataChanged             = false;
-        $this->_newKeys                 = [];
-        $this->_removedKeys             = [];
-        $this->_originalCollectionSize  = $this->count();
+        $this->originalCollection = [];
+        $this->dataChanged = false;
+        $this->newKeys = [];
+        $this->removedKeys = [];
+        $this->originalCollectionSize = $this->count();
         return $this;
     }
 
@@ -493,14 +497,14 @@ class Collection implements ArrayAccess, Iterator
      * @param array $arrayData
      * @return $this
      */
-    public function appendArray(array $arrayData)
+    public function appendArray(array $arrayData): self
     {
         foreach ($arrayData as $data) {
             $this->addElement($data);
         }
 
-        if ($this->_objectCreation) {
-            return $this->_afterAppendDataToNewObject();
+        if ($this->objectCreation) {
+            return $this->afterAppendDataToNewObject();
         }
         return $this;
     }
@@ -512,16 +516,16 @@ class Collection implements ArrayAccess, Iterator
      * @param null|string $key
      * @return mixed
      */
-    public function getOriginalCollection($key = null)
+    public function getOriginalCollection(?string $key = null): mixed
     {
-        $this->_prepareData($key);
+        $this->prepareData($key);
 
-        $data               = $this->_removeNewKeys($this->_COLLECTION);
-        $collection         = [];
-        $index              = 0;
+        $data = $this->removeNewKeys($this->collection);
+        $collection = [];
+        $index = 0;
 
-        for ($i = 0; $i < $this->_originalCollectionSize; $i++) {
-            if (in_array($i, $this->_removedKeys)) {
+        for ($i = 0; $i < $this->originalCollectionSize; $i++) {
+            if (\in_array($i, $this->removedKeys, true)) {
                 $collection[$i] = null;
                 $index++;
             } else {
@@ -531,18 +535,14 @@ class Collection implements ArrayAccess, Iterator
 
         $mergedData = ArrayHelper::arrayMerge(
             $collection,
-            $this->_originalCollection
+            $this->originalCollection
         );
 
         if (!$key) {
             return $mergedData;
         }
 
-        if (array_key_exists($key, $mergedData)) {
-            return $mergedData[$key];
-        }
-
-        return null;
+        return $mergedData[$key] ?? null;
     }
 
     /**
@@ -551,28 +551,29 @@ class Collection implements ArrayAccess, Iterator
      * @param int $index
      * @return $this
      */
-    public function delete($index)
+    public function delete(int $index): self
     {
         return $this->removeElement($index);
     }
 
     /**
      * check that given index exist and allow to remove it and recalculate new index array
-     * 
+     **
+     *
      * @param int $index
      * @return $this
      */
-    protected function _deleteNewKey($index)
+    protected function deleteNewKey(int $index): self
     {
-        $key = array_search($index, $this->_newKeys);
+        $key = \array_search($index, $this->newKeys, true);
 
         if ($key) {
-            unset($this->_newKeys[$key]);
-            $this->_recalculateCollectionNewIndexes();
+            unset($this->newKeys [$key]);
+            $this->recalculateCollectionNewIndexes();
         } else {
-            $this->_removedKeys[] = $index;
-            array_walk($this->_newKeys, function(&$index) {
-                $index -= 1;
+            $this->removedKeys [] = $index;
+            \array_walk($this->newKeys , static function(&$index) {
+                --$index;
             });
         }
 
@@ -581,26 +582,26 @@ class Collection implements ArrayAccess, Iterator
 
     /**
      * add one row element to collection
-     * 
+     **
      * @param mixed $data
      * @return $this
      */
-    public function addElement($data)
+    public function addElement(mixed $data): self
     {
-        $bool = $this->_validateData($data);
+        $bool = $this->validateData($data);
         if (!$bool) {
             return $this;
         }
 
-        $data                   = $this->_prepareData($data);
-        $this->_COLLECTION[]    = $data;
-        $this->_dataChanged     = true;
+        $data = $this->prepareData($data);
+        $this->collection[] = $data;
+        $this->dataChanged = true;
 
-        if (!$this->_objectCreation) {
-            $keys               = array_keys($this->_COLLECTION);
-            $this->_newKeys[]   = end($keys);
+        if (!$this->objectCreation) {
+            $keys = \array_keys($this->collection);
+            $this->newKeys [] = \end($keys);
         } else {
-            $this->_originalCollectionSize++;
+            $this->originalCollectionSize++;
         }
 
         return $this;
@@ -608,35 +609,35 @@ class Collection implements ArrayAccess, Iterator
 
     /**
      * allow to change data in given index
-     * 
+     **
      * @param int $index
      * @param mixed $newData
      * @param null|string|Callable $callback
      * @return $this
      */
-    public function changeElement($index, $newData, $callback = null)
+    public function changeElement(int $index, mixed $newData, null|string|callable $callback = null): self
     {
         if (!$this->hasElement($index)) {
             return $this;
         }
 
-        $bool = $this->_validateData($newData);
+        $bool = $this->validateData($newData);
         if (!$bool) {
             return $this;
         }
 
-        $newData = $this->_prepareData($newData);
-        $this->_moveToOriginalCollection($index);
+        $newData = $this->prepareData($newData);
+        $this->moveToOriginalCollection($index);
 
         if ($callback) {
-            $this->_COLLECTION[$index] = $this->_callUserFunction(
+            $this->collection[$index] = $this->callUserFunction(
                 $callback,
                 $index,
                 $newData,
                 null
             );
         } else {
-            $this->_COLLECTION[$index] = $newData;
+            $this->collection[$index] = $newData;
         }
 
         return $this;
@@ -645,16 +646,16 @@ class Collection implements ArrayAccess, Iterator
     /**
      * check that data on given index is part of base object
      * and if is move it to original collection
-     * 
+     **
      * @param int $index
      * @return $this
      */
-    protected function _moveToOriginalCollection($index)
+    protected function moveToOriginalCollection(int $index): self
     {
-        if (!array_key_exists($index, $this->_originalCollection)
-            && !in_array($index, $this->_newKeys)
+        if (!\array_key_exists($index, $this->originalCollection)
+            && !\in_array($index, $this->newKeys, true)
         ) {
-            $this->_originalCollection[$index] = $this->_COLLECTION[$index];
+            $this->originalCollection[$index] = $this->collection[$index];
         }
 
         return $this;
@@ -662,14 +663,14 @@ class Collection implements ArrayAccess, Iterator
 
     /**
      * launch data preparation
-     * 
+     **
      * @param mixed $data
      * @return mixed
      */
-    protected function _prepareData($data)
+    protected function prepareData(mixed $data): mixed
     {
-        if ($this->_preparationOn) {
-            $data = $this->_dataPreparation($data);
+        if ($this->preparationOn) {
+            $data = $this->dataPreparation($data);
         }
 
         return $data;
@@ -677,39 +678,39 @@ class Collection implements ArrayAccess, Iterator
 
     /**
      * recalculate indexes of new elements in collection
-     * 
+     **
      * @return $this
      */
-    protected function _recalculateCollectionNewIndexes()
+    protected function recalculateCollectionNewIndexes(): self
     {
-        $totalElements  = $this->count();
-        $totalNewKeys   = count($this->_newKeys);
-        $indexList      = [];
+        $totalElements = $this->count();
+        $totalNewKeys = \count($this->newKeys);
+        $indexList = [];
 
         for ($i = $totalElements; $i < $totalNewKeys -2; $i++) {
             $indexList[] = $i;
         }
 
-        $this->_newKeys = $indexList;
+        $this->newKeys = $indexList;
         return $this;
     }
 
     /**
      * after some changes in collection structure recalculate numeric indexes
      * of collection elements
-     * 
+     **
      * @return $this
      */
-    protected function _recalculateCollectionIndexes()
+    protected function recalculateCollectionIndexes(): self
     {
-        $totalElements  = $this->count();
-        $indexList      = [];
+        $totalElements = $this->count();
+        $indexList = [];
 
         for ($i = 0; $i < $totalElements; $i++) {
             $indexList[] = $i;
         }
 
-        $this->_COLLECTION = array_combine($indexList, $this->_COLLECTION);
+        $this->collection = \array_combine($indexList, $this->collection);
 
         return $this;
     }
@@ -720,10 +721,10 @@ class Collection implements ArrayAccess, Iterator
      * @param array $rules
      * @return $this
      */
-    public function putPreparationCallback(array $rules)
+    public function putPreparationCallback(array $rules): self
     {
-        $this->_dataPreparationCallbacks = array_merge(
-            $this->_dataPreparationCallbacks,
+        $this->dataPreparationCallbacks = \array_merge(
+            $this->dataPreparationCallbacks,
             $rules
         );
         return $this;
@@ -734,9 +735,9 @@ class Collection implements ArrayAccess, Iterator
      *
      * @return array
      */
-    public function returnPreparationRules()
+    public function returnPreparationRules(): array
     {
-        return $this->_dataPreparationCallbacks;
+        return $this->dataPreparationCallbacks;
     }
 
     /**
@@ -745,12 +746,12 @@ class Collection implements ArrayAccess, Iterator
      * @param null|string $rule
      * @return $this
      */
-    public function removePreparationRules($rule = null)
+    public function removePreparationRules(?string $rule = null): self
     {
-        if (is_null($rule)) {
-            $this->_dataPreparationCallbacks = [];
+        if (\is_null($rule)) {
+            $this->dataPreparationCallbacks = [];
         } else {
-            unset($this->_dataPreparationCallbacks[$rule]);
+            unset($this->dataPreparationCallbacks[$rule]);
         }
 
         return $this;
@@ -762,10 +763,10 @@ class Collection implements ArrayAccess, Iterator
      * @param array $rules
      * @return $this
      */
-    public function putRetrieveCallback(array $rules)
+    public function putRetrieveCallback(array $rules): self
     {
-        $this->_dataRetrieveCallbacks = array_merge(
-            $this->_dataRetrieveCallbacks,
+        $this->dataRetrieveCallbacks = \array_merge(
+            $this->dataRetrieveCallbacks,
             $rules
         );
         return $this;
@@ -776,9 +777,9 @@ class Collection implements ArrayAccess, Iterator
      *
      * @return array
      */
-    public function returnRetrieveRules()
+    public function returnRetrieveRules(): array
     {
-        return $this->_dataRetrieveCallbacks;
+        return $this->dataRetrieveCallbacks;
     }
 
     /**
@@ -787,12 +788,12 @@ class Collection implements ArrayAccess, Iterator
      * @param null|string $rule
      * @return $this
      */
-    public function removeRetrieveRules($rule = null)
+    public function removeRetrieveRules(?string $rule = null): self
     {
         if (is_null($rule)) {
-            $this->_dataRetrieveCallbacks = [];
+            $this->dataRetrieveCallbacks = [];
         } else {
-            unset($this->_dataRetrieveCallbacks[$rule]);
+            unset($this->dataRetrieveCallbacks[$rule]);
         }
 
         return $this;
@@ -804,10 +805,10 @@ class Collection implements ArrayAccess, Iterator
      * @param mixed $data
      * @return mixed
      */
-    protected function _dataPreparation($data)
+    protected function dataPreparation(mixed $data): mixed
     {
-        foreach ($this->_dataPreparationCallbacks as $rule) {
-            $data = $this->_callUserFunction($rule, null, $data, null);
+        foreach ($this->dataPreparationCallbacks as $rule) {
+            $data = $this->callUserFunction($rule, null, $data, null);
         }
 
         return $data;
@@ -815,33 +816,33 @@ class Collection implements ArrayAccess, Iterator
 
     /**
      * return information that collection has some errors
-     * 
+     **
      * @return bool
      */
-    public function checkErrors()
+    public function checkErrors(): bool
     {
-        return $this->_hasErrors;
+        return $this->hasErrors;
     }
 
     /**
      * return all object errors
-     * 
+     **
      * @return array
      */
-    public function returnObjectError()
+    public function returnObjectError(): array
     {
-        return $this->_errorsList;
+        return $this->errorsList;
     }
 
     /**
      * clear all errors and set hasErrors to false
-     * 
+     **
      * @return $this
      */
-    public function removeObjectError()
+    public function removeObjectError(): self
     {
-        $this->_hasErrors   = false;
-        $this->_errorsList  = [];
+        $this->hasErrors = false;
+        $this->errorsList = [];
         return $this;
     }
 
@@ -851,24 +852,24 @@ class Collection implements ArrayAccess, Iterator
      * @param mixed $data
      * @return bool
      */
-    protected function _validateData($data)
+    protected function validateData(mixed $data): bool
     {
-        if (!$this->_validationOn) {
+        if (!$this->validationOn) {
             return true;
         }
 
         $validateFlag = true;
-        foreach ($this->_validationRules as $rule) {
-            $bool = $this->_callUserFunction($rule, null, $data, null);
+        foreach ($this->validationRules as $rule) {
+            $bool = $this->callUserFunction($rule, null, $data, null);
 
             if (!$bool) {
-                $validateFlag           = false;
-                $this->_hasErrors       = true;
-                $this->_errorsList[]    = [
-                    'message'   => 'validation_mismatch',
-                    'index'     => null,
-                    'data'      => $data,
-                    'rule'      => $rule,
+                $validateFlag = false;
+                $this->hasErrors = true;
+                $this->errorsList[] = [
+                    'message' => 'validation_mismatch',
+                    'index' => null,
+                    'data' => $data,
+                    'rule' => $rule,
                 ];
             }
         }
@@ -885,10 +886,10 @@ class Collection implements ArrayAccess, Iterator
      * @param mixed $attributes
      * @return mixed
      */
-    protected function _callUserFunction($function, $index, $value, $attributes)
+    protected function callUserFunction(array|string|\Closure $function, ?int $index, mixed $value, mixed $attributes): mixed
     {
-        if (is_callable($function)) {
-            return call_user_func_array($function, [$index, $value, $this, $attributes]);
+        if (\is_callable($function)) {
+            return $function($index, $value, $this, $attributes);
         }
 
         return $value;
@@ -901,9 +902,9 @@ class Collection implements ArrayAccess, Iterator
      * @param array $rules
      * @return $this
      */
-    public function putValidationRule(array $rules)
+    public function putValidationRule(array $rules): self
     {
-        $this->_validationRules = array_merge($this->_validationRules, $rules);
+        $this->validationRules = \array_merge($this->validationRules, $rules);
         return $this;
     }
 
@@ -912,9 +913,9 @@ class Collection implements ArrayAccess, Iterator
      *
      * @return array
      */
-    public function returnValidationRules()
+    public function returnValidationRules(): array
     {
-        return $this->_validationRules;
+        return $this->validationRules;
     }
 
     /**
@@ -923,12 +924,12 @@ class Collection implements ArrayAccess, Iterator
      * @param null|string $rule
      * @return $this
      */
-    public function removeValidationRules($rule = null)
+    public function removeValidationRules(?string $rule = null): self
     {
-        if (is_null($rule)) {
-            $this->_validationRules = [];
+        if (\is_null($rule)) {
+            $this->validationRules = [];
         } else {
-            unset($this->_validationRules[$rule]);
+            unset($this->validationRules[$rule]);
         }
 
         return $this;
@@ -939,9 +940,9 @@ class Collection implements ArrayAccess, Iterator
      *
      * @return mixed
      */
-    public function getCollection()
+    public function getCollection(): mixed
     {
-        return $this->_prepareCollection();
+        return $this->prepareCollection();
     }
 
     /**
@@ -950,16 +951,12 @@ class Collection implements ArrayAccess, Iterator
      * @param int $pageSize
      * @return bool
      */
-    protected function _isPageAllowed($pageSize)
+    protected function isPageAllowed(int $pageSize): bool
     {
         $max = $this->count() >= ($this->getPageSize() * $pageSize);
         $min = $pageSize >= 1;
 
-        if ($max && $min) {
-            return true;
-        }
-
-        return false;
+        return $max && $min;
     }
 
     /**
@@ -967,10 +964,10 @@ class Collection implements ArrayAccess, Iterator
      *
      * @return $this
      */
-    public function nextPage()
+    public function nextPage(): self
     {
-        if ($this->_isPageAllowed($this->getCurrentPage() +1)) {
-            $this->_currentPage++;
+        if ($this->isPageAllowed($this->getCurrentPage() +1)) {
+            $this->currentPage++;
         }
 
         return $this;
@@ -981,10 +978,10 @@ class Collection implements ArrayAccess, Iterator
      *
      * @return $this
      */
-    public function previousPage()
+    public function previousPage(): self
     {
-        if ($this->_isPageAllowed($this->getCurrentPage() -1)) {
-            $this->_currentPage--;
+        if ($this->isPageAllowed($this->getCurrentPage() -1)) {
+            $this->currentPage--;
         }
 
         return $this;
@@ -995,23 +992,23 @@ class Collection implements ArrayAccess, Iterator
      *
      * @return $this
      */
-    protected function _afterAppendDataToNewObject()
+    protected function afterAppendDataToNewObject(): self
     {
-        $this->_dataChanged = false;
+        $this->dataChanged = false;
         return $this;
     }
 
     /**
      * return element from collection by given index
-     * 
+     **
      * @param int $index
-     * @return mixed|null
+     * @return mixed
      */
-    public function getElement($index)
+    public function getElement(int $index): mixed
     {
         if ($this->hasElement($index)) {
-            $data = $this->_COLLECTION[$index];
-            return $this->_prepareCollection($data, true);
+            $data = $this->collection[$index];
+            return $this->prepareCollection($data, true);
         }
 
         return null;
@@ -1019,72 +1016,72 @@ class Collection implements ArrayAccess, Iterator
 
     /**
      * alias for getElement method
-     * 
+     **
      * @param int $index
-     * @return mixed|null
+     * @return mixed
      */
-    public function get($index)
+    public function get(int $index): mixed
     {
         return $this->getElement($index);
     }
 
     /**
      * alias for changeElement method
-     * 
+     **
      * @param int $index
      * @param mixed $newData
      * @param null|string|Callable $callback
      * @return $this
      */
-    public function change($index, $newData, $callback = null)
+    public function change(int $index, mixed $newData, null|string|callable $callback = null): self
     {
         return $this->changeElement($index, $newData, $callback);
     }
 
     /**
      * remove element from collection
-     * 
+     **
      * @param int $index
      * @return Collection
      */
-    public function removeElement($index)
+    public function removeElement(int $index): self
     {
         if (!$this->hasElement($index)) {
             return $this;
         }
 
-        $this->_moveToOriginalCollection($index)->_deleteNewKey($index);
-        unset($this->_COLLECTION[$index]);
-        $this->_recalculateCollectionIndexes();
-        $this->_dataChanged = true;
+        $this->moveToOriginalCollection($index)->deleteNewKey($index);
+        unset($this->collection[$index]);
+        $this->recalculateCollectionIndexes();
+        $this->dataChanged = true;
 
         return $this;
     }
 
     /**
      * check that element exist in collection
-     * 
+     **
      * @param int $index
      * @return bool
      */
-    public function hasElement($index)
+    public function hasElement(int $index): bool
     {
-        return array_key_exists($index, $this->_COLLECTION);
+        return \array_key_exists($index, $this->collection);
     }
 
     /**
      * return list of indexed to update or delete when iterating by pages
-     * 
+     **
      * @param int $page
      * @return array
      */
-    protected function _getIndexesToUpdate($page)
+    protected function getIndexesToUpdate(int $page): array
     {
-        $indexes    = [];
-        $startPage  = $page * $this->_pageSize;
+        $indexes = [];
+        $startIndex = $page * $this->pageSize;
 
-        for ($i = $startPage; $i < $page; $i++) {
-            if ($this->_isPageAllowed($i)) {
+        for ($i = $startIndex; $i < $page; $i++) {
+            if ($this->isPageAllowed($i)) {
                 $indexes[] = $i;
             }
         }
@@ -1100,11 +1097,11 @@ class Collection implements ArrayAccess, Iterator
      */
     public function offsetExists(mixed $offset): bool
     {
-        if ($this->_loopByPages) {
-            return $this->_isPageAllowed($offset +1);
-        } else {
-            return $this->hasElement($offset);
+        if ($this->loopByPages) {
+            return $this->isPageAllowed($offset +1);
         }
+
+        return $this->hasElement($offset);
     }
 
     /**
@@ -1115,40 +1112,43 @@ class Collection implements ArrayAccess, Iterator
      */
     public function offsetGet(mixed $offset): mixed
     {
-        if ($this->_loopByPages) {
+        if ($this->loopByPages) {
             return $this->getPage($offset +1);
-        } else {
-            return $this->getElement($offset);
         }
+
+        return $this->getElement($offset);
     }
 
     /**
      * set data for given key
      *
-     * @param int|null $offset
+     * @param mixed $offset
      * @param mixed $value
-     * @return $this
+     * @return void
      */
     public function offsetSet(mixed $offset, mixed $value): void
     {
-        if ($this->_loopByPages) {
-            $indexesToUpdate    = $this->_getIndexesToUpdate($offset +1);
-            $counter            = 0;
+        if ($this->loopByPages) {
+            $indexesToUpdate = $this->getIndexesToUpdate($offset);
+            $counter = 0;
 
             foreach ($value as $element) {
                 if (empty($indexesToUpdate)) {
                     break;
                 }
-                $this->changeElement($indexesToUpdate[$counter], $element);
+                //? add element
+                if ($this->hasElement($offset)) {
+                    $this->changeElement($indexesToUpdate[$counter], $element);
+                } else {
+                    $this->addElement($element);
+                }
                 $counter++;
                 unset($indexesToUpdate[$counter]);
             }
+        } elseif ($this->hasElement($offset)) {
+            $this->changeElement($offset, $value);
         } else {
-            if ($this->hasElement($offset)) {
-                $this->changeElement($offset, $value);
-            } else {
-                $this->addElement($value);
-            }
+            $this->addElement($value);
         }
     }
 
@@ -1156,19 +1156,18 @@ class Collection implements ArrayAccess, Iterator
      * remove data for given key
      *
      * @param int $offset
-     * @return $this
+     * @return void
      */
     public function offsetUnset(mixed $offset): void
     {
-        if ($this->_loopByPages) {
-            $indexesToRemove = $this->_getIndexesToUpdate($offset +1);
+        if ($this->loopByPages) {
+            $indexesToRemove = $this->getIndexesToUpdate($offset +1);
             foreach ($indexesToRemove as $index) {
                 $this->delete($index);
             }
         } else {
             $this->delete($offset);
         }
-
     }
 
     /**
@@ -1181,43 +1180,42 @@ class Collection implements ArrayAccess, Iterator
     {
         $key = $this->key();
 
-        if ($this->_loopByPages) {
+        if ($this->loopByPages) {
             return $this->getPage($key);
-        } else {
-            current($this->_COLLECTION);
-            return $this->getElement($key);
         }
+
+        return $this->getElement($key);
     }
 
     /**
      * return the current element in an array
      *
-     * @return mixed
+     * @return string|int|null
      */
-    public function key(): mixed
+    public function key(): string|int|null
     {
-        if ($this->_loopByPages) {
+        if ($this->loopByPages) {
             return $this->getCurrentPage();
-        } else {
-            return key($this->_COLLECTION);
         }
+
+        return \key($this->collection);
     }
 
     /**
      * advance the internal array pointer of an array
      * handle data preparation
      *
-     * @return mixed
+     * @return void
      */
     public function next(): void
     {
         $key = $this->key();
 
-        if ($this->_loopByPages) {
+        if ($this->loopByPages) {
             $this->setCurrentPage($key +1);
             $this->getPage($this->getCurrentPage());
         } else {
-            next($this->_COLLECTION);
+            \next($this->collection);
             $this->getElement($key);
         }
     }
@@ -1225,15 +1223,15 @@ class Collection implements ArrayAccess, Iterator
     /**
      * rewind the position of a file pointer
      *
-     * @return mixed
+     * @return void
      */
     public function rewind(): void
     {
-        if ($this->_loopByPages) {
+        if ($this->loopByPages) {
             $this->setCurrentPage(1);
             $this->getFirstPage();
         } else {
-            reset($this->_COLLECTION);
+            \reset($this->collection);
         }
     }
 
@@ -1244,11 +1242,11 @@ class Collection implements ArrayAccess, Iterator
      */
     public function valid(): bool
     {
-        if ($this->_loopByPages) {
-            return $this->_isPageAllowed($this->key());
-        } else {
-            return key($this->_COLLECTION) !== null;
+        if ($this->loopByPages) {
+            return $this->isPageAllowed($this->key());
         }
+
+        return key($this->collection) !== null;
     }
 
     /**
@@ -1256,9 +1254,9 @@ class Collection implements ArrayAccess, Iterator
      *
      * @return $this
      */
-    public function stopValidation()
+    public function stopValidation(): self
     {
-        $this->_validationOn = false;
+        $this->validationOn = false;
         return $this;
     }
 
@@ -1269,18 +1267,18 @@ class Collection implements ArrayAccess, Iterator
      */
     public function startValidation()
     {
-        $this->_validationOn = true;
+        $this->validationOn = true;
         return $this;
     }
 
     /**
      * return information that validation is on
-     * 
+     **
      * @return bool
      */
-    public function isValidationOn()
+    public function isValidationOn(): bool
     {
-        return $this->_validationOn;
+        return $this->validationOn;
     }
 
     /**
@@ -1288,9 +1286,9 @@ class Collection implements ArrayAccess, Iterator
      *
      * @return $this
      */
-    public function stopInputPreparation()
+    public function stopInputPreparation(): self
     {
-        $this->_preparationOn = false;
+        $this->preparationOn = false;
         return $this;
     }
 
@@ -1299,9 +1297,9 @@ class Collection implements ArrayAccess, Iterator
      *
      * @return $this
      */
-    public function startInputPreparation()
+    public function startInputPreparation(): self
     {
-        $this->_preparationOn = true;
+        $this->preparationOn = true;
         return $this;
     }
 
@@ -1310,9 +1308,9 @@ class Collection implements ArrayAccess, Iterator
      *
      * @return $this
      */
-    public function stopOutputPreparation()
+    public function stopOutputPreparation(): self
     {
-        $this->_retrieveOn = false;
+        $this->retrieveOn = false;
         return $this;
     }
 
@@ -1321,9 +1319,9 @@ class Collection implements ArrayAccess, Iterator
      *
      * @return $this
      */
-    public function startOutputPreparation()
+    public function startOutputPreparation(): self
     {
-        $this->_retrieveOn = true;
+        $this->retrieveOn = true;
         return $this;
     }
 
@@ -1332,10 +1330,10 @@ class Collection implements ArrayAccess, Iterator
      *
      * @return mixed
      */
-    public function first()
+    public function first(): mixed
     {
-        $data = reset($this->_COLLECTION);
-        return $this->_prepareCollection($data, true);
+        $data = \reset($this->collection);
+        return $this->prepareCollection($data, true);
     }
 
     /**
@@ -1343,20 +1341,20 @@ class Collection implements ArrayAccess, Iterator
      *
      * @return mixed
      */
-    public function last()
+    public function last(): mixed
     {
-        $data = end($this->_COLLECTION);
-        return $this->_prepareCollection($data, true);
+        $data = \end($this->collection);
+        return $this->prepareCollection($data, true);
     }
 
     /**
      * return number of all elements in collection
      *
-     * @return int|void
+     * @return int|null
      */
-    public function count()
+    public function count(): ?int
     {
-        return count($this->_COLLECTION);
+        return \count($this->collection);
     }
 
     /**
@@ -1375,9 +1373,9 @@ class Collection implements ArrayAccess, Iterator
      * @param int $size
      * @return $this
      */
-    public function setPageSize($size)
+    public function setPageSize(int $size): self
     {
-        $this->_pageSize = $size;
+        $this->pageSize = $size;
         return $this;
     }
 
@@ -1386,9 +1384,9 @@ class Collection implements ArrayAccess, Iterator
      *
      * @return int
      */
-    public function getPageSize()
+    public function getPageSize(): int
     {
-        return $this->_pageSize;
+        return $this->pageSize;
     }
 
     /**
@@ -1396,9 +1394,9 @@ class Collection implements ArrayAccess, Iterator
      *
      * @return int
      */
-    public function getCurrentPage()
+    public function getCurrentPage(): int
     {
-        return $this->_currentPage;
+        return $this->currentPage;
     }
 
     /**
@@ -1407,20 +1405,20 @@ class Collection implements ArrayAccess, Iterator
      * @param int $page
      * @return $this
      */
-    public function setCurrentPage($page)
+    public function setCurrentPage(int $page): self
     {
-        $this->_currentPage = $page;
+        $this->currentPage = $page;
         return $this;
     }
 
     /**
      * return number of all pages
      *
-     * @return float
+     * @return int
      */
-    public function countPages()
+    public function countPages(): int
     {
-        return ceil($this->count() / $this->getPageSize());
+        return (int)\ceil($this->count() / $this->getPageSize());
     }
 
     /**
@@ -1428,68 +1426,69 @@ class Collection implements ArrayAccess, Iterator
      *
      * @return array|mixed
      */
-    public function getFirstPage()
+    public function getFirstPage(): mixed
     {
-        $data = $this->_getPage(1);
-        return $this->_prepareCollection($data);
+        $data = $this->getPageInternal(1);
+        return $this->prepareCollection($data);
     }
 
     /**
      * get all elements from last page
-     * 
-     * @return array|mixed
+     **
+     * @return mixed
      */
-    public function getLastPage()
+    public function getLastPage(): mixed
     {
-        $data = $this->_getPage($this->countPages());
-        return $this->_prepareCollection($data);
+        $data = $this->getPageInternal($this->countPages());
+        return $this->prepareCollection($data);
     }
 
     /**
      * return elements for page with given index
-     * 
+     **
      * @param int $index
      * @return array
      */
-    protected function _getPage($index)
+    protected function getPageInternal(int $index): array
     {
-        $pageSize   = $this->getPageSize();
-        $start      = ($index * $pageSize) -$pageSize;
-        return array_slice($this->_COLLECTION, $start, $pageSize);
+        $pageSize = $this->getPageSize();
+        $start = ($index * $pageSize) - $pageSize;
+        return \array_slice($this->collection, $start, $pageSize);
     }
 
     /**
      * return current page or page with given index
      * return null if page don't exists
-     * 
-     * @param null|int $index
+     **
+     *
+     * @param int|null $index
      * @return mixed|null
      */
-    public function getPage($index = null)
+    public function getPage(?int $index = null): mixed
     {
         if (!$index) {
             $index = $this->getCurrentPage();
         }
 
-        if (!$this->_isPageAllowed($index)) {
+        if (!$this->isPageAllowed($index)) {
             return null;
         }
 
-        $data = $this->_getPage($index);
-        return $this->_prepareCollection($data);
+        $data = $this->getPageInternal($index);
+        return $this->prepareCollection($data);
     }
 
     /**
      * get next page of collection
      * don't change the current page marker
-     * 
+     **
      * @return array|null
      */
-    public function getNextPage()
+    public function getNextPage(): ?array
     {
         $page = $this->getCurrentPage() +1;
 
-        if (!$this->_isPageAllowed($page)) {
+        if (!$this->isPageAllowed($page)) {
             return null;
         }
 
@@ -1502,11 +1501,11 @@ class Collection implements ArrayAccess, Iterator
      *
      * @return array|null
      */
-    public function getPreviousPage()
+    public function getPreviousPage(): ?array
     {
         $page = $this->getCurrentPage() -1;
 
-        if (!$this->_isPageAllowed($page)) {
+        if (!$this->isPageAllowed($page)) {
             return null;
         }
 
@@ -1515,24 +1514,24 @@ class Collection implements ArrayAccess, Iterator
 
     /**
      * set loop on collection to iterate on pages, if false on elements
-     * 
+     **
      * @param bool $bool
      * @return $this
      */
-    public function loopByPages($bool = true)
+    public function loopByPages(bool $bool = true): self
     {
-        $this->_loopByPages = (bool)$bool;
+        $this->loopByPages = $bool;
         return $this;
     }
 
     /**
      * return information witch loop is used for collection
-     * 
+     **
      * @return bool
      */
-    public function isLoopByPagesEnabled()
+    public function isLoopByPagesEnabled(): bool
     {
-        return $this->_loopByPages;
+        return $this->loopByPages;
     }
 
     /**
@@ -1540,16 +1539,17 @@ class Collection implements ArrayAccess, Iterator
      * as parameter take data given to object by reference
      *
      * @param mixed $data
+     * @return mixed
      */
-    protected function _initializeObject(&$data)
+    protected function initializeObject(mixed $data): mixed
     {
-
+        return $data;
     }
 
     /**
      * can be overwritten by children objects to start with some special operations
      */
-    protected function _afterInitializeObject()
+    protected function afterInitializeObject(): void
     {
 
     }
@@ -1559,9 +1559,10 @@ class Collection implements ArrayAccess, Iterator
      * as parameter take data given to object by reference
      *
      * @param mixed $data
+     * @return mixed
      */
-    protected function _beforeInitializeObject($data)
+    protected function beforeInitializeObject(mixed $data): mixed
     {
-
+        return $data;
     }
 }

@@ -19,10 +19,8 @@ class ArrayHelperTest extends TestCase
      * test array merge
      *
      * @param array $data
-     *
-     * @dataProvider arrayDataProvider
-     * @requires arrayDataProvider
      */
+    #[DataProvider('arrayDataProvider')]
     public function testArrayMerge($data)
     {
         static $iteration = 1;
@@ -39,10 +37,8 @@ class ArrayHelperTest extends TestCase
      * test array merge recursive
      *
      * @param array $data
-     *
-     * @dataProvider arrayDataProvider
-     * @requires arrayDataProvider
      */
+    #[DataProvider('arrayDataProvider')]
     public function testArrayMergeRecursive($data)
     {
         static $iteration = 1;

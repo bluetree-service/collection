@@ -13,6 +13,7 @@ use BlueCollection\Data\Collection;
 use BlueContainer\Container;
 use PHPUnit\Framework\TestCase;
 use Laminas\Serializer\Adapter\PhpSerialize;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class CollectionTest extends TestCase
 {
@@ -21,10 +22,8 @@ class CollectionTest extends TestCase
      *
      * @param Collection $collection
      * @param array $data
-     * @dataProvider exampleCollectionObject
-     * @requires exampleCollection
-     * @requires exampleCollectionObject
      */
+    #[DataProvider('exampleCollectionObject')]
     public function testCreateCollection($collection, array $data)
     {
         $this->assertEquals('lorem ipsum', $collection->first());
@@ -36,11 +35,9 @@ class CollectionTest extends TestCase
         $this->assertEquals('lorem ipsum', $collection->first());
         $this->assertEquals($data[1]['data_first'], $collection->getElement(1)['data_first']);
     }
+
     /**
      * test basic object creation with json data
-     *
-     * @requires exampleCollection
-     * @requires exampleCollectionObject
      */
     public function testCreateJsonCollection()
     {
@@ -58,11 +55,26 @@ class CollectionTest extends TestCase
         $this->assertEquals('lorem ipsum', $collection->first());
         $this->assertEquals($data[1]['data_first'], $collection->getElement(1)['data_first']);
     }
+
+    /**
+     * test basic object creation with json data
+     */
+    public function testCreateJsonCollectionWithError()
+    {
+        $json = '["lorem ipsum",{"data_first":1,"data_second":2,"data_third":3},{"data_first":true,"data_second":fals';
+
+        $collection = new Collection([
+            'data'  => $json,
+            'type'  => 'json'
+        ]);
+
+        $this->assertNotEquals('lorem ipsum', $collection->first());
+        $this->assertTrue($collection->checkErrors());
+        $this->assertEquals('Syntax error', $collection->returnObjectError()[4]['message']);
+    }
+
     /**
      * test basic object creation with serialized data
-     *
-     * @requires exampleCollection
-     * @requires exampleCollectionObject
      */
     public function testCreateSerializedCollection()
     {
@@ -78,16 +90,28 @@ class CollectionTest extends TestCase
             'type'  => 'serialized'
         ]);
 
-//        dump($collection->);
-
         $this->assertEquals('lorem ipsum', $collection->first());
         $this->assertEquals($data[1]['data_first'], $collection->getElement(1)['data_first']);
     }
 
+    #[DataProvider('exampleCollectionObject')]
+    public function testSerializeCollection($collection, array $data)
+    {
+        $serialized = $collection->serialize();
+        $unserializedCollection = new Collection([
+            'data'  => $serialized,
+            'type'  => 'serialized'
+        ]);
+
+        $this->assertEquals('lorem ipsum', $unserializedCollection->first());
+        $this->assertEquals($data[1]['data_first'], $unserializedCollection->getElement(1)['data_first']);
+
+        $serialized2 = (string)$collection;
+        $this->assertEquals($serialized2, $serialized);
+    }
+
     /**
      * check validation rules when add data to collection on object creation
-     *
-     * @requires exampleCollectionObject
      */
     public function testCreateCollectionWithValidation()
     {
@@ -113,9 +137,25 @@ class CollectionTest extends TestCase
             'data'          => $data,
             'validation'    => $validationRules
         ]);
+        
+        $rules = $collection->returnValidationRules();
+        $this->assertNotEmpty($rules);
+        $this->assertInstanceOf(\Closure::class, $rules['rule_1']);
 
         $this->assertFalse($collection->checkErrors());
         $this->assertEmpty($collection->returnObjectError());
+        
+        $collection->changeElement(0, 'lorem ipsum dolor');
+        $this->assertTrue($collection->checkErrors());
+        $this->assertNotEmpty($collection->returnObjectError());
+        $this->assertEquals(
+            'validation_mismatch',
+            $collection->returnObjectError()[0]['message']
+        );
+        
+        $collection->removeValidationRules();
+        $rules = $collection->returnValidationRules();
+        $this->assertEmpty($rules);
 
         $validationRules    = [
             'rule_1' => function ($index, $value) {
@@ -127,10 +167,10 @@ class CollectionTest extends TestCase
             },
         ];
 
-        $collection = new Collection([
-            'data'          => $data,
-            'validation'    => $validationRules
-        ]);
+        $collection = new Collection();
+        $collection->startValidation();
+        $collection->putValidationRule($validationRules);
+        $collection->appendArray($data);
 
         $this->assertTrue($collection->checkErrors());
         $this->assertNull($collection->returnObjectError()[0]['index']);
@@ -138,12 +178,22 @@ class CollectionTest extends TestCase
             'validation_mismatch',
             $collection->returnObjectError()[0]['message']
         );
+        
+        $collection->removeObjectError();
+        $this->assertFalse($collection->checkErrors());
+        $this->assertEmpty($collection->returnObjectError());
+        
+        $this->assertTrue($collection->isValidationOn());
+        $collection->stopValidation();
+        $this->assertFalse($collection->isValidationOn());
+        $collection->appendArray($data);
+
+        $this->assertFalse($collection->checkErrors());
+        $this->assertEmpty($collection->returnObjectError());
     }
 
     /**
      * test data preparation when object is creating
-     * 
-     * @requires exampleCollectionObject
      */
     public function testCreateCollectionWithDataPreparation()
     {
@@ -163,14 +213,18 @@ class CollectionTest extends TestCase
             'preparation'   => $preparationRules
         ]);
 
+        $this->assertNotEmpty($collection->returnPreparationRules());
+        $this->assertInstanceOf(\Closure::class, $collection->returnPreparationRules()['rule_1']);
+
         $this->assertEquals('test key', $collection[7]->getTestKey());
         $this->assertEquals('test key', $collection[8]->getTestKey());
+
+        $collection->removePreparationRules();
+        $this->assertEmpty($collection->returnPreparationRules());
     }
 
     /**
      * test data preparation when collection return some elements
-     *
-     * @requires exampleCollectionObject
      */
     public function testReturnCollectionWithDataPreparation()
     {
@@ -189,13 +243,27 @@ class CollectionTest extends TestCase
             'data'          => $data,
         ]);
 
+        $collection->startOutputPreparation();
         $this->assertNull($collection[7]->getTestKey());
         $this->assertNull($collection[8]->getTestKey());
 
         $collection->putRetrieveCallback($preparationRules);
+        
+        $this->assertNotEmpty($collection->returnRetrieveRules());
 
         $this->assertEquals('test return key', $collection[7]->getTestKey());
         $this->assertEquals('test return key', $collection[8]->getTestKey());
+
+        $data = $collection->getCollection();
+        $this->assertEquals('lorem ipsum', $data[0]);
+        $this->assertEquals($data[1]['data_first'], $collection->getElement(1)['data_first']);
+        
+        $collection->stopOutputPreparation();
+        $this->assertEquals('lorem ipsum', $collection->first());
+        $this->assertEquals($data[1]['data_first'], $collection->getElement(1)['data_first']);
+
+        $collection->removeRetrieveRules();
+        $this->assertEmpty($collection->returnRetrieveRules());
     }
 
     /**
@@ -203,9 +271,8 @@ class CollectionTest extends TestCase
      *
      * @param Collection $collection
      * @param array $data
-     * @dataProvider exampleCollectionObject
-     * @requires exampleCollection
      */
+    #[DataProvider('exampleCollectionObject')]
     public function testArrayAccessForCollection($collection, array $data)
     {
         foreach ($collection as $index => $element) {
@@ -218,9 +285,8 @@ class CollectionTest extends TestCase
      *
      * @param Collection $collection
      * @param array $data
-     * @dataProvider exampleCollectionObject
-     * @requires exampleCollection
      */
+    #[DataProvider('exampleCollectionObject')]
     public function testBasicAccessToCollectionElements($collection, array $data)
     {
         $this->assertEquals('lorem ipsum', $collection->first());
@@ -229,15 +295,24 @@ class CollectionTest extends TestCase
         $this->assertEquals($data[1]['data_first'], $collection->getElement(1)['data_first']);
         $this->assertEquals(9, $collection->count());
         $this->assertTrue($collection->hasElement(5));
+
+        $this->assertFalse(isset($collection[9]));
+        $collection[9] = 'offset 9';
+        $this->assertTrue(isset($collection[9]));
+        $this->assertEquals('offset 9', $collection[9]);
+
+        $collection[11] = 'offset 11';
+        $this->assertFalse(isset($collection[11]));
+        $this->assertTrue(isset($collection[10]));
+        $this->assertEquals('offset 11', $collection[10]);
     }
 
     /**
      * test correct set page size and count available pages
      *
      * @param Collection $collection
-     * @dataProvider exampleCollectionObject
-     * @requires exampleCollection
      */
+    #[DataProvider('exampleCollectionObject')]
     public function testPageInformation($collection)
     {
         $collection->setPageSize(2);
@@ -250,9 +325,8 @@ class CollectionTest extends TestCase
      *
      * @param Collection $collection
      * @param array $data
-     * @dataProvider exampleCollectionObject
-     * @requires exampleCollection
      */
+    #[DataProvider('exampleCollectionObject')]
     public function testPageAccessForCollection($collection, array $data)
     {
         $collection->setPageSize(2);
@@ -269,6 +343,11 @@ class CollectionTest extends TestCase
         $this->assertEquals(2, $collection->getCurrentPage());
         $this->assertEquals([$data[4], $data[5]], $collection->getNextPage());
         $this->assertEquals([$data[0], $data[1]], $collection->getPreviousPage());
+
+        $collection->previousPage();
+
+        $this->assertEquals(1, $collection->getCurrentPage());
+        $this->assertEquals([$data[2], $data[3]], $collection->getNextPage());
     }
 
     /**
@@ -276,9 +355,8 @@ class CollectionTest extends TestCase
      *
      * @param Collection $collection
      * @param array $data
-     * @dataProvider exampleCollectionObject
-     * @requires exampleCollection
      */
+    #[DataProvider('exampleCollectionObject')]
     public function testArrayAccessToCollectionPages($collection, array $data)
     {
         $collection->setPageSize(2);
@@ -294,15 +372,28 @@ class CollectionTest extends TestCase
         foreach ($collection as $index => $element) {
             $this->assertEquals($collection->getPage($index), $element);
         }
+
+//        $this->assertFalse(isset($collection[4]));
+//        $collection[4] = [
+//            'offset 4',
+//            'offset 4.1',
+//        ];
+//        dump($collection->getCollection());
+//        $this->assertTrue(isset($collection[4]));
+//        $this->assertEquals('offset 9', $collection[9]);
+//
+//        $collection[11] = 'offset 11';
+//        $this->assertFalse(isset($collection[11]));
+//        $this->assertTrue(isset($collection[10]));
+//        $this->assertEquals('offset 11', $collection[10]);
     }
 
     /**
      * test add, modify and delete elements from collection
      *
      * @param Collection $collection
-     * @dataProvider exampleCollectionObject
-     * @requires exampleCollection
      */
+    #[DataProvider('exampleCollectionObject')]
     public function testElementCRUD($collection)
     {
         $collection->addElement('some new element');
@@ -320,7 +411,9 @@ class CollectionTest extends TestCase
         $collection->changeElement(0, 'changed lorem ipsum');
         $this->assertEquals('changed lorem ipsum', $collection->getElement(0));
 
-        $collection->changeElement(7, 'new data', function($index, $newData, $collection) {
+        $this->assertNull($collection->getElement(100));
+
+        $collection->change(7, 'new data', function($index, $newData, $collection) {
             /** @var Collection $collection*/
             $object = $collection->getElement($index);
             $object->setNewData($newData);
@@ -334,53 +427,89 @@ class CollectionTest extends TestCase
      * test add, modify and delete elements from collection with original collection save
      *
      * @param Collection $collection
-     * @dataProvider exampleCollectionObject
-     * @requires exampleCollection
      */
+    #[DataProvider('exampleCollectionObject')]
     public function testElementCRUDWithOriginalData($collection)
     {
-//        $originalCollection = clone $collection;
-//        $collection->addElement('some new element');
-//
-//        $this->assertNotEquals($collection->getCollection(), $collection->getOriginalCollection());
-//        $this->assertEquals($originalCollection->getCollection(), $collection->getOriginalCollection());
-//
-//        $collection->addElement('some new element 2');
-//        $this->assertEquals($originalCollection->getCollection(), $collection->getOriginalCollection());
-//
-//        $collection->changeElement(0, 'changed lorem ipsum');
-//        $this->assertEquals($originalCollection->getCollection(), $collection->getOriginalCollection());
-//
-//        $collection->delete(3);
-//        $this->assertNotEquals($collection->getCollection(), $collection->getOriginalCollection());
-//        $this->assertEquals($originalCollection->getCollection(), $collection->getOriginalCollection());
+        $originalCollection = clone $collection;
+        $collection->addElement('some new element');
+
+        $this->assertNotEquals($collection->getCollection(), $collection->getOriginalCollection());
+        $this->assertEquals($originalCollection->getCollection(), $collection->getOriginalCollection());
+
+        $collection->addElement('some new element 2');
+        $this->assertEquals($originalCollection->getCollection(), $collection->getOriginalCollection());
+
+        $collection->changeElement(0, 'changed lorem ipsum');
+        $this->assertEquals($originalCollection->getCollection(), $collection->getOriginalCollection());
+
+        $collection->delete(3);
+        $this->assertNotEquals($collection->getCollection(), $collection->getOriginalCollection());
+        $this->assertEquals($originalCollection->getCollection(), $collection->getOriginalCollection());
+
+        $collection->delete(2);
+        $this->assertNotEquals($collection->getCollection()[2], $collection->getOriginalCollection(2));
+        $this->assertEquals($originalCollection->getCollection()[2], $collection->getOriginalCollection(2));
+
+        $this->assertArrayHasKey(8, $collection->getCollection());
+        $collection->delete(8);
+        $this->assertArrayNotHasKey(8, $collection->getCollection());
     }
 
     /**
      * test add, modify and delete elements from collection with original collection save
      *
      * @param Collection $collection
-     * @dataProvider exampleCollectionObject
-     * @requires exampleCollection
      */
+    #[DataProvider('exampleCollectionObject')]
     public function testOriginalCollectionRevertAndReplace($collection)
     {
-//        $originalCollection = clone $collection;
-//        $collection->addElement('some new element');
-//        $collection->addElement('some new element 2');
-//        $collection->changeElement(0, 'changed lorem ipsum');
-//
-//        $this->assertEquals($originalCollection->getCollection(), $collection->getOriginalCollection());
-//
-//        $collection->restoreData();
-//
-//        $this->assertEquals($originalCollection->getCollection(), $collection->getCollection());
+        $originalCollection = clone $collection;
+        $collection->addElement('some new element');
+        $collection->addElement('some new element 2');
+        $collection->changeElement(0, 'changed lorem ipsum');
+
+        $this->assertEquals($originalCollection->getCollection(), $collection->getOriginalCollection());
+
+        $collection->restoreData();
+
+        $this->assertEquals($originalCollection->getCollection(), $collection->getCollection());
+
+        $collection->addElement('some new element');
+        $collection->addElement('some new element 2');
+        $collection->changeElement(0, 'changed lorem ipsum');
+
+        $collection->restoreData(1);
+        $this->assertNotEquals($originalCollection->getCollection(), $collection->getCollection());
+
+        $collection->restoreData(0);
+        $this->assertEquals($originalCollection->getCollection()[0], $collection->getCollection()[0]);
+    }
+
+    /**
+     * @param Collection $collection
+     */
+    #[DataProvider('exampleCollectionObject')]
+    public function testOriginalCollectionReplace($collection)
+    {
+        $originalCollection = clone $collection;
+        $collection->addElement('some new element');
+        $collection->addElement('some new element 2');
+        $collection->changeElement(0, 'changed lorem ipsum');
+
+        $this->assertEquals($originalCollection->getCollection(), $collection->getOriginalCollection());
+        
+        $collection->replaceDataArrays();
+        $collection->restoreData();
+
+        $this->assertNotEquals($originalCollection->getCollection(), $collection->getCollection());
     }
 
     /**
      * create collection object for test
-     * 
+     *
      * @return array
+     * @throws \JsonException
      */
     public static function exampleCollectionObject(): array
     {
@@ -398,7 +527,7 @@ class CollectionTest extends TestCase
      * 
      * @return array
      */
-    protected static function exampleCollection()
+    public static function exampleCollection()
     {
         $object = new Container(
             [
