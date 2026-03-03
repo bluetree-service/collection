@@ -10,17 +10,17 @@
 namespace Test;
 
 use BlueCollection\Helper\ArrayHelper;
+use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 
-class ArrayHelperTest extends \PHPUnit_Framework_TestCase
+class ArrayHelperTest extends TestCase
 {
     /**
      * test array merge
      *
      * @param array $data
-     *
-     * @dataProvider arrayDataProvider
-     * @requires arrayDataProvider
      */
+    #[DataProvider('arrayDataProvider')]
     public function testArrayMerge($data)
     {
         static $iteration = 1;
@@ -37,10 +37,8 @@ class ArrayHelperTest extends \PHPUnit_Framework_TestCase
      * test array merge recursive
      *
      * @param array $data
-     *
-     * @dataProvider arrayDataProvider
-     * @requires arrayDataProvider
      */
+    #[DataProvider('arrayDataProvider')]
     public function testArrayMergeRecursive($data)
     {
         static $iteration = 1;
@@ -58,7 +56,7 @@ class ArrayHelperTest extends \PHPUnit_Framework_TestCase
      *
      * @return array
      */
-    public function arrayDataProvider()
+    public static function arrayDataProvider()
     {
         return [
             [
